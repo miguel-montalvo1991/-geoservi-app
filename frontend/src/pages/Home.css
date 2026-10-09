@@ -1,0 +1,131 @@
+.home {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.home__header {
+  margin-bottom: 1.75rem;
+}
+
+.home__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.home__subtitle {
+  margin: 0;
+  color: #7c8a91;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(62, 213, 152, 0.12);
+  color: #3ed598;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.home__section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.service-list {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Cada servicio es un <button> real, no un <li> plano — por eso ahora sí responde al click */
+.service-card {
+  width: 100%;
+  text-align: left;
+  background: #11181c;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  color: #e6edf0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.service-card:hover {
+  background: #151d22;
+}
+
+.service-card--selected {
+  border-color: #3ed598;
+  background: rgba(62, 213, 152, 0.08);
+}
+
+.service-card__name {
+  font-weight: 600;
+}
+
+.service-card__meta {
+  font-size: 0.8rem;
+  color: #7c8a91;
+}
+
+.service-detail {
+  background: #0e1518;
+  border: 1px solid rgba(255, 176, 32, 0.3);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.service-detail__text {
+  margin: 0 0 0.5rem;
+}
+
+.service-detail__note {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: #7c8a91;
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: #3ed598;
+  color: #05080a;
+}
+
+.btn--primary:disabled {
+  background: #23342c;
+  color: #7c8a91;
+  cursor: not-allowed;
+}
+
+.btn--ghost {
+  background: transparent;
+  border: 1px solid #2a343a;
+  color: #7c8a91;
+}
+
+.home__logout {
+  margin-top: 0.5rem;
+}

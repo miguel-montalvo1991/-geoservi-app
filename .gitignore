@@ -1,0 +1,36 @@
+# ============================================================
+# GeoServi-App — .gitignore raíz (monorepo backend/ + frontend/)
+# ============================================================
+
+# Dependencias — nunca se versionan, se reinstalan con npm install
+node_modules/
+**/node_modules/
+
+# Variables de entorno — contienen credenciales (DATABASE_URL, JWT_SECRET)
+# Si esto llega a subirse una vez, hay que rotar las credenciales igual.
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+
+# Logs
+*.log
+npm-debug.log*
+backend/antes-eslint.txt
+
+# Editor / SO
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Cobertura de tests
+coverage/
