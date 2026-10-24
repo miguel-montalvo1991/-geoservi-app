@@ -1,5 +1,5 @@
 // Cliente HTTP mínimo: centraliza la URL base y el manejo de errores del backend
-const BASE_URL = "http://localhost:4000";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export async function apiFetch(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {

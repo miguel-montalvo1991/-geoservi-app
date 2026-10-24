@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* Reset básico + tema oscuro base de toda la app */
 * {
   box-sizing: border-box;
