@@ -100,6 +100,77 @@
   color: #7c8a91;
 }
 
+.request-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 1rem 0;
+  color: #c6d0d4;
+  font-size: 0.88rem;
+}
+
+.request-field input,
+.request-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #2a343a;
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  background: #080d0f;
+  color: #e6edf0;
+  font: inherit;
+}
+
+.request-field input:focus,
+.request-field textarea:focus {
+  outline: 2px solid rgba(62, 213, 152, 0.55);
+  border-color: #3ed598;
+}
+
+.request-field textarea {
+  resize: vertical;
+}
+
+.form-message {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+}
+
+.form-message--error {
+  color: #ff8585;
+}
+
+.form-message--success {
+  color: #3ed598;
+}
+
+.request-history {
+  margin: 2rem 0 1.5rem;
+}
+
+.request-history__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.request-history__item {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: #11181c;
+}
+
+.request-history__item span,
+.request-history__item p {
+  margin: 0;
+  color: #7c8a91;
+  font-size: 0.82rem;
+}
+
 .btn {
   border: none;
   border-radius: 8px;

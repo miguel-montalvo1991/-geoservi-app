@@ -1,12 +1,67 @@
-import { useState } from "react";
-import RadarScanner from "../components/RadarScanner";
+import { useEffect, useState } from "react";
+import { apiFetch } from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import "./Home.css";
 
+const OFICIOS = ["Plomero", "Electricista", "Cerrajero", "Jardinero"];
+
+function obtenerUbicacion() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Este navegador no permite obtener la ubicación."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => resolve({ lat: coords.latitude, lng: coords.longitude }),
+      (error) => reject(new Error(error.code === error.PERMISSION_DENIED
+        ? "Permite el acceso a tu ubicación para publicar la solicitud."
+        : "No pudimos obtener tu ubicación. Inténtalo de nuevo.")),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  });
+}
+
 export default function Home() {
-  const { user, logout } = useAuth();
-  const [servicios, setServicios] = useState(null); // null = todavía buscando
+  const { user, token, logout } = useAuth();
   const [seleccionado, setSeleccionado] = useState(null);
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [mensaje, setMensaje] = useState("");
+  const [error, setError] = useState("");
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [errorHistorial, setErrorHistorial] = useState("");
+
+  useEffect(() => {
+    if (user.role !== "cliente") return;
+    apiFetch("/requests/mine", { headers: { Authorization: `Bearer ${token}` } })
+      .then((data) => setSolicitudes(data.requests))
+      .catch((err) => setErrorHistorial(err.message));
+  }, [token, user.role]);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (!seleccionado) return;
+    setError("");
+    setMensaje("");
+    setEnviando(true);
+    try {
+      const ubicacion = await obtenerUbicacion();
+      const data = await apiFetch("/requests", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ oficio_needed: seleccionado, title: titulo.trim(), description: descripcion.trim(), ...ubicacion }),
+      });
+      setSolicitudes((actuales) => [data.request, ...actuales]);
+      setTitulo("");
+      setDescripcion("");
+      setMensaje("Tu solicitud se publicó correctamente.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   return (
     <div className="home">
@@ -17,50 +72,104 @@ export default function Home() {
         </p>
       </header>
 
-      {servicios === null ? (
-        <RadarScanner onComplete={setServicios} />
-      ) : (
+      {user.role === "cliente" ? (
         <>
-          <h2 className="home__section-title">Servicios cerca de ti</h2>
+          <h2 className="home__section-title">¿Qué servicio necesitas?</h2>
 
           <ul className="service-list">
-            {servicios.map((s) => (
-              <li key={s.id}>
-                {/* Cada servicio es clickeable: al seleccionarlo se resalta y
-                    abre el panel de detalle de abajo */}
+            {OFICIOS.map((oficio) => (
+              <li key={oficio}>
                 <button
+                  type="button"
                   className={
                     "service-card" +
-                    (seleccionado?.id === s.id ? " service-card--selected" : "")
+                    (seleccionado === oficio ? " service-card--selected" : "")
                   }
-                  onClick={() => setSeleccionado(s)}
+                  onClick={() => setSeleccionado(oficio)}
                 >
-                  <span className="service-card__name">{s.nombre}</span>
-                  <span className="service-card__meta">Disponible ahora</span>
+                  <span className="service-card__name">{oficio}</span>
+                  <span className="service-card__meta">Seleccionar oficio</span>
                 </button>
               </li>
             ))}
           </ul>
 
           {seleccionado && (
-            <div className="service-detail">
+            <form className="service-detail" onSubmit={handleSubmit}>
               <p className="service-detail__text">
-                Vas a solicitar: <strong>{seleccionado.nombre}</strong>
+                Solicitud para: <strong>{seleccionado}</strong>
               </p>
-              {/* El backend todavía no tiene el módulo service_requests, así que
-                  el botón queda deshabilitado y con nota honesta en vez de fingir
-                  que la solicitud se envía de verdad */}
+              <label className="request-field">
+                Título
+                <input
+                  value={titulo}
+                  onChange={(event) => setTitulo(event.target.value)}
+                  minLength={3}
+                  maxLength={150}
+                  placeholder="Ej. Reparar una fuga en la cocina"
+                  required
+                />
+              </label>
+              <label className="request-field">
+                Describe lo que necesitas
+                <textarea
+                  value={descripcion}
+                  onChange={(event) => setDescripcion(event.target.value)}
+                  minLength={10}
+                  maxLength={5000}
+                  rows={4}
+                  placeholder="Cuéntanos qué ocurrió y qué trabajo necesitas."
+                  required
+                />
+              </label>
               <p className="service-detail__note">
-                El envío real de solicitudes aún no está construido en el backend
-                (módulo service_requests, siguiente en el roadmap). Por ahora esta
-                pantalla solo confirma la selección.
+                Usaremos tu ubicación actual para registrar dónde necesitas el servicio.
               </p>
-              <button className="btn btn--primary" disabled>
-                Solicitar servicio (próximamente)
+              {error && (
+                <p className="form-message form-message--error" role="alert">
+                  {error}
+                </p>
+              )}
+              {mensaje && (
+                <p className="form-message form-message--success" role="status">
+                  {mensaje}
+                </p>
+              )}
+              <button className="btn btn--primary" type="submit" disabled={enviando}>
+                {enviando ? "Publicando solicitud..." : "Publicar solicitud"}
               </button>
-            </div>
+            </form>
           )}
+
+          <section className="request-history" aria-labelledby="request-history-title">
+            <h2 id="request-history-title" className="home__section-title">Mis solicitudes</h2>
+            {errorHistorial && (
+              <p className="form-message form-message--error" role="alert">
+                {errorHistorial}
+              </p>
+            )}
+            {!errorHistorial && solicitudes.length === 0 && (
+              <p className="service-detail__note">
+                Aún no has publicado solicitudes.
+              </p>
+            )}
+            {solicitudes.length > 0 && (
+              <ul className="request-history__list">
+                {solicitudes.map((solicitud) => (
+                  <li className="request-history__item" key={solicitud.id}>
+                    <strong>{solicitud.title}</strong>
+                    <span>{solicitud.oficio_needed} · {solicitud.status}</span>
+                    <p>{solicitud.description}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </>
+      ) : (
+        <p className="service-detail__note">
+          El panel para prestadores estará disponible en una siguiente etapa.
+        </p>
       )}
 
       <button className="btn btn--ghost home__logout" onClick={logout}>
