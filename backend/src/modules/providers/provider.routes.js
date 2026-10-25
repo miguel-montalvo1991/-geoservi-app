@@ -19,8 +19,10 @@ router.post("/me", requireAuth, requireRole("prestador"), createProfile);
 router.get("/me", requireAuth, requireRole("prestador"), getMyProfile);
 router.patch("/me", requireAuth, requireRole("prestador"), updateMyProfile);
 
-router.get("/:id", requireAuth, getProviderById);
+// Las rutas específicas deben ir antes de /:id para que "search" no se
+// interprete como un UUID de prestador.
 router.get("/search", requireAuth, searchProviders);
+router.get("/:id", requireAuth, getProviderById);
 
 // Solo administrador: activar/desactivar un prestador (Práctica 6)
 router.patch("/:id/status", requireAuth, requireRole("administrador"), updateProviderStatus);

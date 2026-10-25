@@ -219,22 +219,28 @@ export async function searchProviders(req, res, next) {
     const parsed = searchSchema.parse(req.query);
 
     const result = await pool.query(
-      `SELECT
-         pp.user_id, pp.oficio, pp.avg_rating, pp.coverage_radius_km,
-         6371 * acos(
-           cos(radians($1)) * cos(radians(pp.lat)) * cos(radians($2) - radians(pp.lng))
-           + sin(radians($1)) * sin(radians(pp.lat))
-         ) AS distance_km
-       FROM provider_profiles pp
-       JOIN users u ON u.id = pp.user_id
-       WHERE pp.status = 'aprobado'
-         AND u.account_status = 'activo'
-         AND pp.oficio = $3
-       HAVING 6371 * acos(
-           cos(radians($1)) * cos(radians(pp.lat)) * cos(radians($2) - radians(pp.lng))
-           + sin(radians($1)) * sin(radians(pp.lat))
-         ) <= LEAST($4, pp.coverage_radius_km)
-       ORDER BY distance_km ASC`,
+      `WITH candidates AS (
+         SELECT
+           pp.user_id,
+           pp.oficio,
+           pp.avg_rating,
+           pp.coverage_radius_km,
+           6371 * acos(LEAST(1, GREATEST(-1,
+             cos(radians($1)) * cos(radians(pp.lat))
+             * cos(radians($2) - radians(pp.lng))
+             + sin(radians($1)) * sin(radians(pp.lat))
+           ))) AS distance_km
+         FROM provider_profiles pp
+         JOIN users u ON u.id = pp.user_id
+         WHERE pp.status = 'aprobado'
+           AND u.account_status = 'activo'
+           AND u.is_active = TRUE
+           AND pp.oficio = $3
+       )
+       SELECT user_id, oficio, avg_rating, coverage_radius_km, distance_km
+       FROM candidates
+       WHERE distance_km <= LEAST($4, coverage_radius_km)
+       ORDER BY distance_km ASC, user_id ASC`,
       [parsed.lat, parsed.lng, parsed.oficio, parsed.radius_km]
     );
 
