@@ -63,6 +63,10 @@ CREATE TABLE provider_profiles (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Reduce candidatos antes de calcular Haversine por cada perfil.
+CREATE INDEX idx_provider_profiles_search
+    ON provider_profiles (oficio, status, user_id);
+
 -- Lista cerrada de estados posibles de una solicitud, a lo largo de su ciclo de vida
 CREATE TYPE request_status AS ENUM ('abierta', 'asignada', 'completada', 'cancelada');
 
