@@ -9,6 +9,8 @@ import {
   getProviderById,
   updateProviderStatus,
   searchProviders, 
+  getPendingProviders,
+  reviewProvider,
 } from "./provider.controller.js";
 
 const router = Router();
@@ -19,7 +21,21 @@ router.post("/me", requireAuth, requireRole("prestador"), createProfile);
 router.get("/me", requireAuth, requireRole("prestador"), getMyProfile);
 router.patch("/me", requireAuth, requireRole("prestador"), updateMyProfile);
 
+router.get(
+  "/admin/pending",
+  requireAuth,
+  requireRole("administrador"),
+  getPendingProviders
+);
+
 router.get("/:id", requireAuth, getProviderById);
+
+router.patch(
+  "/:id/review",
+  requireAuth,
+  requireRole("administrador"),
+  reviewProvider
+);
 router.get("/search", requireAuth, searchProviders);
 
 // Solo administrador: activar/desactivar un prestador (Práctica 6)

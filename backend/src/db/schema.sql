@@ -26,7 +26,7 @@ CREATE TABLE users (
 -- al rol prestador (HU-06/HU-11). Un cliente o admin no tienen ese concepto.
 
 -- Lista cerrada del ciclo de vida del prestador (HU-06 → HU-11)
-CREATE TYPE provider_status AS ENUM ('pendiente', 'aprobado', 'suspendido');
+CREATE TYPE provider_status AS ENUM ('pendiente', 'aprobado', 'rechazado', 'suspendido');
 
 
 --2. PROVIDER_PROFILES — datos exclusivos del prestador (1 a 1 con users)

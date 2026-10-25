@@ -165,6 +165,90 @@ export async function getProviderById(req, res, next) {
 }
 
 // ------------------------------------------------------------
+// GET /providers/admin/pending — revisión de perfiles (HU-06)
+// ------------------------------------------------------------
+export async function getPendingProviders(req, res, next) {
+  try {
+    const result = await pool.query(
+      `SELECT pp.user_id, u.name, u.email, pp.oficio, pp.status,
+              pp.lat, pp.lng, pp.coverage_radius_km, pp.created_at
+       FROM provider_profiles pp
+       JOIN users u ON u.id = pp.user_id
+       WHERE pp.status = 'pendiente'
+         AND u.role = 'prestador'
+         AND u.account_status = 'activo'
+         AND u.is_active = TRUE
+       ORDER BY pp.created_at ASC, pp.user_id ASC`
+    );
+
+    return res.json({ count: result.rows.length, providers: result.rows });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+const reviewProviderSchema = z.object({
+  status: z.enum(["aprobado", "rechazado"]),
+});
+
+// ------------------------------------------------------------
+// PATCH /providers/:id/review — aprobar o rechazar un perfil (HU-06)
+// ------------------------------------------------------------
+export async function reviewProvider(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { status } = reviewProviderSchema.parse(req.body);
+    const result = await pool.query(
+      `UPDATE provider_profiles pp
+       SET status = $1::provider_status,
+           approved_by = CASE
+             WHEN $1::provider_status = 'aprobado'::provider_status THEN $2::uuid
+             ELSE NULL
+           END,
+           approved_at = CASE
+             WHEN $1::provider_status = 'aprobado'::provider_status THEN now()
+             ELSE NULL
+           END
+       FROM users u
+       WHERE pp.user_id = $3
+         AND pp.user_id = u.id
+         AND u.role = 'prestador'
+         AND u.account_status = 'activo'
+         AND u.is_active = TRUE
+         AND pp.status = 'pendiente'
+       RETURNING pp.user_id, pp.oficio, pp.status, pp.approved_by,
+                 pp.approved_at, pp.created_at`,
+      [status, req.user.id, id]
+    );
+
+    if (result.rows.length === 0) {
+      const existing = await pool.query(
+        "SELECT status FROM provider_profiles WHERE user_id = $1",
+        [id]
+      );
+
+      if (existing.rows.length === 0) {
+        return res.status(404).json({ message: "Perfil de prestador no encontrado" });
+      }
+
+      return res.status(409).json({
+        message: "El perfil no está pendiente de revisión",
+        status: existing.rows[0].status,
+      });
+    }
+
+    return res.json({
+      profile: result.rows[0],
+      message: status === "aprobado"
+        ? "Prestador aprobado correctamente"
+        : "Prestador rechazado correctamente",
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+// ------------------------------------------------------------
 // PATCH /providers/:id/status — activar/desactivar un prestador
 // (Práctica 6: gestión administrativa de usuarios)
 //
