@@ -40,6 +40,26 @@
   margin: 0 0 1rem;
 }
 
+.notification-count {
+  display: inline-block;
+  margin-left: 0.55rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(62, 213, 152, 0.12);
+  color: #3ed598;
+  font-size: 0.72rem;
+  vertical-align: middle;
+}
+
+.notification-item--unread {
+  border: 1px solid rgba(62, 213, 152, 0.35);
+}
+
+.notification-item__action {
+  justify-self: start;
+  margin-top: 0.35rem;
+}
+
 .service-list {
   list-style: none;
   margin: 0 0 1.5rem;

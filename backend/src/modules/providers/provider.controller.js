@@ -13,6 +13,7 @@ const createProfileSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   coverage_radius_km: z.number().positive().max(50).optional(),
+  is_available: z.boolean().optional(),
 });
 
 // PATCH acepta los mismos campos, todos opcionales — pero OJO:
@@ -22,7 +23,7 @@ const createProfileSchema = z.object({
 const updateProfileSchema = createProfileSchema.partial();
 
 const PROFILE_FIELDS =
-  "user_id, oficio, status, lat, lng, coverage_radius_km, avg_rating, approved_at, created_at";
+  "user_id, oficio, status, lat, lng, coverage_radius_km, is_available, avg_rating, approved_at, created_at";
 
 // ------------------------------------------------------------
 // POST /providers/me — crear el perfil de prestador propio
@@ -44,10 +45,10 @@ export async function createProfile(req, res, next) {
     }
 
     const result = await pool.query(
-      `INSERT INTO provider_profiles (user_id, oficio, lat, lng, coverage_radius_km)
-       VALUES ($1, $2, $3, $4, COALESCE($5, 3.0))
+      `INSERT INTO provider_profiles (user_id, oficio, lat, lng, coverage_radius_km, is_available)
+       VALUES ($1, $2, $3, $4, COALESCE($5, 3.0), COALESCE($6, TRUE))
        RETURNING ${PROFILE_FIELDS}`,
-      [userId, parsed.oficio, parsed.lat, parsed.lng, parsed.coverage_radius_km]
+      [userId, parsed.oficio, parsed.lat, parsed.lng, parsed.coverage_radius_km, parsed.is_available]
     );
 
     return res.status(201).json({
@@ -234,7 +235,8 @@ export async function searchProviders(req, res, next) {
          JOIN users u ON u.id = pp.user_id
          WHERE pp.status = 'aprobado'
            AND u.account_status = 'activo'
-           AND u.is_active = TRUE
+             AND u.is_active = TRUE
+             AND pp.is_available = TRUE
            AND pp.oficio = $3
        )
        SELECT user_id, oficio, avg_rating, coverage_radius_km, distance_km

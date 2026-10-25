@@ -77,8 +77,14 @@ una vez en tu repo (Settings → Labels) antes de usarlas.
 ### HU-04 — Notificación a prestadores cercanos
 - **Labels:** `epica:requests`, `prioridad:alta`
 - **Rama:** `feature/HU-04-notificar-prestadores`
-- **Decisión de diseño abierta:** ¿se guarda simple en `audit_logs` o se crea
-  tabla `notifications` propia? Resolver antes de empezar a programar.
+- **Decisión de diseño:** tabla `notifications` propia para consultar avisos y
+  marcar su lectura; `audit_logs` queda reservado para trazabilidad de acciones.
+- La publicación de una solicitud notifica, dentro de una transacción, a los
+  prestadores aprobados, activos y disponibles del mismo oficio dentro de
+  `LEAST(5 km, coverage_radius_km)`.
+- API: `GET /notifications/mine` y `PATCH /notifications/:id/read`.
+- La disponibilidad se gestiona desde `PATCH /providers/me` con `is_available`.
+- Migración: `004_notifications.sql`.
 
 ### HU-05 — Enviar oferta (con validación de límite)
 - **Labels:** `epica:offers`, `prioridad:alta`

@@ -31,6 +31,8 @@ export default function Home() {
   const [error, setError] = useState("");
   const [solicitudes, setSolicitudes] = useState([]);
   const [errorHistorial, setErrorHistorial] = useState("");
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [errorNotificaciones, setErrorNotificaciones] = useState("");
 
   useEffect(() => {
     if (user.role !== "cliente") return;
@@ -38,6 +40,47 @@ export default function Home() {
       .then((data) => setSolicitudes(data.requests))
       .catch((err) => setErrorHistorial(err.message));
   }, [token, user.role]);
+
+  useEffect(() => {
+    if (user.role !== "prestador") return;
+
+    let cancelled = false;
+    async function cargarNotificaciones() {
+      try {
+        const data = await apiFetch("/notifications/mine", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!cancelled) {
+          setNotificaciones(data.notifications);
+          setErrorNotificaciones("");
+        }
+      } catch (err) {
+        if (!cancelled) setErrorNotificaciones(err.message);
+      }
+    }
+
+    cargarNotificaciones();
+    const intervalId = window.setInterval(cargarNotificaciones, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [token, user.role]);
+
+  async function marcarNotificacionLeida(id) {
+    setErrorNotificaciones("");
+    try {
+      const data = await apiFetch(`/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotificaciones((actuales) => actuales.map((notificacion) =>
+        notificacion.id === id ? data.notification : notificacion
+      ));
+    } catch (err) {
+      setErrorNotificaciones(err.message);
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -167,9 +210,49 @@ export default function Home() {
           </section>
         </>
       ) : (
-        <p className="service-detail__note">
-          El panel para prestadores estará disponible en una siguiente etapa.
-        </p>
+        <section className="request-history" aria-labelledby="notifications-title">
+          <h2 id="notifications-title" className="home__section-title">
+            Solicitudes cercanas
+            {notificaciones.some((notificacion) => !notificacion.read_at) && (
+              <span className="notification-count" aria-label="Tienes avisos sin leer">
+                {notificaciones.filter((notificacion) => !notificacion.read_at).length} nuevas
+              </span>
+            )}
+          </h2>
+          {errorNotificaciones && (
+            <p className="form-message form-message--error" role="alert">
+              {errorNotificaciones}
+            </p>
+          )}
+          {!errorNotificaciones && notificaciones.length === 0 && (
+            <p className="service-detail__note">
+              Cuando se publique una solicitud de tu oficio cerca de tu ubicación, aparecerá aquí.
+            </p>
+          )}
+          {notificaciones.length > 0 && (
+            <ul className="request-history__list">
+              {notificaciones.map((notificacion) => (
+                <li
+                  className={`request-history__item${notificacion.read_at ? "" : " notification-item--unread"}`}
+                  key={notificacion.id}
+                >
+                  <strong>{notificacion.title}</strong>
+                  <span>{new Date(notificacion.created_at).toLocaleString()}</span>
+                  <p>{notificacion.message}</p>
+                  {!notificacion.read_at && (
+                    <button
+                      className="btn btn--ghost notification-item__action"
+                      type="button"
+                      onClick={() => marcarNotificacionLeida(notificacion.id)}
+                    >
+                      Marcar como leída
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       <button className="btn btn--ghost home__logout" onClick={logout}>

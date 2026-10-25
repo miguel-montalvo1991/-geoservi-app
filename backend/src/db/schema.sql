@@ -54,6 +54,9 @@ CREATE TABLE provider_profiles (
     avg_rating          NUMERIC(2,1) NOT NULL DEFAULT 0
                         CHECK (avg_rating BETWEEN 0 AND 5),
 
+    -- El prestador puede pausar la recepción de solicitudes sin bloquear su cuenta.
+    is_available        BOOLEAN NOT NULL DEFAULT TRUE,
+
     -- Administrador que aprobó al prestador.
     -- La validación de que realmente sea administrador
     -- la haremos posteriormente en el backend.
@@ -95,6 +98,26 @@ CREATE TABLE service_requests (
 );
 
 CREATE INDEX idx_service_requests_status_oficio ON service_requests (status, oficio_needed);
+
+-- ------------------------------------------------------------
+-- NOTIFICATIONS — avisos dentro de la plataforma (HU-04)
+-- ------------------------------------------------------------
+CREATE TABLE notifications (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recipient_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type                VARCHAR(50) NOT NULL,
+    title               VARCHAR(150) NOT NULL,
+    message             TEXT NOT NULL,
+    service_request_id  UUID NOT NULL REFERENCES service_requests(id) ON DELETE CASCADE,
+    read_at             TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (recipient_id, service_request_id, type)
+);
+
+CREATE INDEX idx_notifications_recipient_created
+    ON notifications (recipient_id, created_at DESC);
+CREATE INDEX idx_notifications_unread
+    ON notifications (recipient_id, created_at DESC) WHERE read_at IS NULL;
 
 -- Lista cerrada de estados de una oferta
 CREATE TYPE offer_status AS ENUM ('enviada', 'aceptada', 'rechazada', 'cerrada');

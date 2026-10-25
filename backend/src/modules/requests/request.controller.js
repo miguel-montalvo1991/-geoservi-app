@@ -13,9 +13,12 @@ const REQUEST_FIELDS =
   "id, client_id, oficio_needed, title, description, lat, lng, status, created_at";
 
 export async function createRequest(req, res, next) {
+  let client;
   try {
     const parsed = createRequestSchema.parse(req.body);
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `INSERT INTO service_requests
          (client_id, oficio_needed, title, description, lat, lng)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -30,9 +33,51 @@ export async function createRequest(req, res, next) {
       ]
     );
 
-    return res.status(201).json({ request: result.rows[0] });
+    const request = result.rows[0];
+    const notificationResult = await client.query(
+      `WITH candidates AS (
+         SELECT pp.user_id,
+                6371 * acos(LEAST(1, GREATEST(-1,
+                  cos(radians($1)) * cos(radians(pp.lat))
+                  * cos(radians($2) - radians(pp.lng))
+                  + sin(radians($1)) * sin(radians(pp.lat))
+                ))) AS distance_km,
+                pp.coverage_radius_km
+         FROM provider_profiles pp
+         JOIN users u ON u.id = pp.user_id
+         WHERE pp.status = 'aprobado'
+           AND pp.is_available = TRUE
+           AND u.role = 'prestador'
+           AND u.account_status = 'activo'
+           AND u.is_active = TRUE
+           AND pp.oficio = $3
+       )
+       INSERT INTO notifications
+         (recipient_id, type, title, message, service_request_id)
+       SELECT user_id,
+              'solicitud_cercana',
+              'Nueva solicitud de ' || $4,
+              $5,
+              $6
+       FROM candidates
+       WHERE distance_km <= LEAST(5, coverage_radius_km)
+       ON CONFLICT (recipient_id, service_request_id, type) DO NOTHING`,
+      [request.lat, request.lng, request.oficio_needed, request.oficio_needed, request.title, request.id]
+    );
+
+    await client.query("COMMIT");
+
+    return res.status(201).json({
+      request,
+      notified_providers: notificationResult.rowCount,
+    });
   } catch (error) {
+    if (client) {
+      await client.query("ROLLBACK").catch(() => {});
+    }
     return next(error);
+  } finally {
+    client?.release();
   }
 }
 
