@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login } from "./auth.controller.js";
+import { register, login, googleAuth } from "./auth.controller.js";
 import { authLimiter } from "../../middlewares/rate-limit.middleware.js";
 import { requireAuth } from "../../middlewares/auth.middleware.js";
 
@@ -9,6 +9,7 @@ const router = Router();
 // (máx. 30 peticiones en 15 min) sobre login Y registro.
 router.post("/register", authLimiter, register);
 router.post("/login", authLimiter, login);
+router.post("/google", authLimiter, googleAuth);
 
 // GET /auth/me - devuelve el usuario según el token enviado.
 // Si el token es inválido o expiró, requireAuth responde 401 antes de llegar aquí,
