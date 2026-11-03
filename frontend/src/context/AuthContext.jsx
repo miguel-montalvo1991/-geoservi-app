@@ -48,6 +48,18 @@ export function AuthProvider({ children }) {
     await login(email, password);
   }
 
+  // Inicio de sesión / registro con Google.
+  // "credential" es el token que entrega Google; "role" solo se manda al
+  // registrarse (si la cuenta aún no existe).
+  async function loginConGoogle(credential, role) {
+    const data = await apiFetch("/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential, role }),
+    });
+    localStorage.setItem("token", data.token);
+    setToken(data.token); // igual que login: dispara la verificación contra /auth/me
+  }
+
   function logout() {
     localStorage.removeItem("token");
     setToken(null);
@@ -55,7 +67,9 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, registrar, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, registrar, loginConGoogle, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
