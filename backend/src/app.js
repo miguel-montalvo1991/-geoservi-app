@@ -5,7 +5,7 @@ import morgan from "morgan";
 import { notFoundHandler, errorHandler} from "./middlewares/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import providerRoutes from "./modules/providers/provider.routes.js";
-
+import githubRoutes from "./modules/integrations/github.routes.js";
 
 const app = express();
 
@@ -13,6 +13,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("combined"));
+app.use("/integrations/github", githubRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ ok: true, message: "GeoServi-App backend funcionando" });
